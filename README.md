@@ -9,7 +9,7 @@ See test_gifraw.py for demo.
 getting transparent color index and its colors. the gifraw module is for it.
 
 # And, Generator
-Frankly speeking, without generator gif file handling is more easy. but, for someone this approching maybe interesting issue.
+Frankly speeking, without generator gif file handling is more easier. but, for someone this approching maybe interesting issue.
 
 # Don't forget
 This is for demo. hope helping you.
