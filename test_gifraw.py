@@ -11,7 +11,7 @@ from gifraw import GifRaw
 def new_resize(fname: str, resized: int, saveto: str) -> None:
     """
     Resize pixel size is width.
-    Show Some GIF file information and ALPHA Colors of each frames.
+    Show Some GIF file informations and ALPHA Colors of each frames.
     """
     import io
     import imageio
