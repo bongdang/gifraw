@@ -18,5 +18,6 @@ logging.getLogger(__name__).addHandler(NullHandler())
 
 from .mainclass import GifRaw
 
+
 def __repr__():
     return f"{DESCRIPTION} : Version ({VERSION}) : by {AUTHOR}"

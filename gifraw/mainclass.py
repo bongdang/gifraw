@@ -8,9 +8,18 @@ from __future__ import annotations
 
 from .__consts__ import VERSION, DESCRIPTION, AUTHOR
 from .enums import ColorTableType, BlockType, ExtensionLabel
-from .subclasses import ( 
-    Header, LogicalScreenDescriptor, ColorTable, Block, LocalImageDescriptor, 
-    Extension, ExtGraphicControl, ExtApplication, ImageData, Subblock, CommonSubblocks
+from .subclasses import (
+    Header,
+    LogicalScreenDescriptor,
+    ColorTable,
+    Block,
+    LocalImageDescriptor,
+    Extension,
+    ExtGraphicControl,
+    ExtApplication,
+    ImageData,
+    Subblock,
+    CommonSubblocks,
 )
 from typing import Generator, Union
 from io import BytesIO
@@ -21,6 +30,7 @@ class GifRaw:
         """
         Currently, Always read whole file. you must have enough memory!
         """
+
         def __init__(self, fname: str) -> None:
             try:
                 with open(fname, "rb") as rf:
@@ -36,7 +46,7 @@ class GifRaw:
             self.cur_point += 1
             return ret
 
-        def read_bytes(self, len:int) -> bytes:
+        def read_bytes(self, len: int) -> bytes:
             chunk = self.data[self.cur_point : self.cur_point + len]
             self.data_len -= len
             self.cur_point += len
@@ -45,7 +55,7 @@ class GifRaw:
         def isEOF(self) -> bool:
             return self.data_len <= 0
 
-        def peek_byte(self, offset:int = 0) -> int:
+        def peek_byte(self, offset: int = 0) -> int:
             return self.data[self.cur_point + offset]
 
     __slots__ = [
@@ -59,7 +69,7 @@ class GifRaw:
         "reader",
         "is_valid_gif",
     ]
-    
+
     def __repr__(self) -> str:
         return f"{DESCRIPTION} : Version ({VERSION}) : by {AUTHOR}"
 
@@ -78,7 +88,7 @@ class GifRaw:
         self.reader = GifRaw.StructRead(gif_file)
         self.is_valid_gif = self.read_all_sections()
 
-    def get_color_table_entry(self, image_body:LocalImageDescriptor) -> tuple:
+    def get_color_table_entry(self, image_body: LocalImageDescriptor) -> tuple:
         if image_body.has_color_table:
             scope = ColorTableType.LOCAL
             color_tables = image_body.local_color_table.entries
@@ -174,9 +184,7 @@ class GifRaw:
                 )
 
         def image_descriptor_yielding() -> Generator[bytes, int, None]:
-            color_table_size = yield self.reader.read_bytes(
-                LocalImageDescriptor.size()
-            )
+            color_table_size = yield self.reader.read_bytes(LocalImageDescriptor.size())
             # if has color table
             if color_table_size != 0:
                 yield self.reader.read_bytes(color_table_size * 3)
@@ -192,17 +200,12 @@ class GifRaw:
             yield ext_type
             if ext_type == ExtensionLabel.APPLICATION.value:
                 n_exeapp_size = ExtApplication.size()
-                chunk_add_size = self.reader.peek_byte(offset = n_exeapp_size + 1)
-                if (
-                    self.reader.peek_byte(offset = n_exeapp_size + chunk_add_size)
-                    != 0
-                ):
+                chunk_add_size = self.reader.peek_byte(offset=n_exeapp_size + 1)
+                if self.reader.peek_byte(offset=n_exeapp_size + chunk_add_size) != 0:
                     # if first byte is not 0, maybe XMP case -BAD spec. - bongdang
                     chunk_add_size = 1
                     while (
-                        self.reader.peek_byte(
-                            offset = n_exeapp_size + chunk_add_size
-                        )
+                        self.reader.peek_byte(offset=n_exeapp_size + chunk_add_size)
                         != 0x00
                     ):
                         chunk_add_size += 1
@@ -238,7 +241,7 @@ class GifRaw:
                 return
 
     def read_all_sections(self) -> bool:
-        def read_sub_blocks(gen : Generator[bytes, bool, None], body) -> None:
+        def read_sub_blocks(gen: Generator[bytes, bool, None], body) -> None:
             body.subblocks = []
             sub_blk_data = next(gen)
             is_left = True
@@ -249,7 +252,7 @@ class GifRaw:
                     is_left = False
                 sub_blk_data = gen.send(is_left)
 
-        def read_image_descriptor(gen : Generator[bytes, int, None], blk: Block) -> None:
+        def read_image_descriptor(gen: Generator[bytes, int, None], blk: Block) -> None:
             blk.body = LocalImageDescriptor(next(gen))
             if blk.body.has_color_table:
                 c_tbl_data = gen.send(blk.body.color_table_size)
@@ -260,7 +263,7 @@ class GifRaw:
             blk.body.image_data = ImageData(img_data)
             read_sub_blocks(gen, blk.body.image_data)
 
-        def read_extention_block(gen : Generator[bytes, None, None], blk: Block) -> None:
+        def read_extention_block(gen: Generator[bytes, None, None], blk: Block) -> None:
             ext_type = next(gen)
             blk.body = Extension(ext_type)
             if ext_type == ExtensionLabel.APPLICATION.value:
@@ -314,7 +317,7 @@ class GifRaw:
         hdr, logical_screen_desc, global_color_table(if any),GRAPHIC_CONTROL Block, IMAGE_DESC Block, GIF_END
         If write to file each buffer, it will be displayable GIF file.
         """
-        
+
         saved_block_idx = 0
         self.raw_img_list = []
         for frameno in range(self.frames):
@@ -340,14 +343,20 @@ class GifRaw:
                         gcb = extention.get_graphic_control
                         if gcb.transparent_color_flag:
                             if self.verbose:
-                                print(f'Using Transparent Color Flag and index is {gcb.transparent_idx}')
+                                print(
+                                    f"Using Transparent Color Flag and index is {gcb.transparent_idx}"
+                                )
                             cur_idx = gcb.transparent_idx
                 elif block.is_image_desc_block:
                     image_body = block.get_image_body
                     context, color_tables = self.get_color_table_entry(image_body)
                     if self.verbose:
-                        print(f'Current Frame #{frameno}, Using {context}')
-                        print(color_tables[cur_idx].red, color_tables[cur_idx].green, color_tables[cur_idx].blue)
+                        print(f"Current Frame #{frameno}, Using {context}")
+                        print(
+                            color_tables[cur_idx].red,
+                            color_tables[cur_idx].green,
+                            color_tables[cur_idx].blue,
+                        )
                     frameno += 1
                     is_one_file = True
                     saved_block_idx = cur_block_idx

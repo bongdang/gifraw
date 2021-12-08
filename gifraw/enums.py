@@ -3,11 +3,13 @@
 
 from enum import Enum
 
-def get_enum(enumclass: Enum, value) -> Enum :
+
+def get_enum(enumclass: Enum, value) -> Enum:
     for en in enumclass:
         if en.value == value:
             return en
     return None
+
 
 class ColorTableType(Enum):
     GLOBAL = 1
@@ -24,4 +26,3 @@ class ExtensionLabel(Enum):
     GRAPHIC_CONTROL = 0xF9
     COMMENT = 0xFE
     APPLICATION = 0xFF
-

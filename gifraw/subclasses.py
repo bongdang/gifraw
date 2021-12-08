@@ -25,6 +25,7 @@ def read_struct_or_int(bytes: bytes, fmt: str) -> Union[tuple, int]:
 
     return ret
 
+
 class Header:
     __slots__ = ["magic", "version"]
 
@@ -32,7 +33,7 @@ class Header:
     def size(cls) -> int:
         return 6
 
-    def __init__(self, bytes:bytes) -> None:
+    def __init__(self, bytes: bytes) -> None:
         # print(bytes)
         self.magic = [0, 0, 0]
         unpacked_t = read_struct_or_int(bytes, "<3B3s")
@@ -40,13 +41,14 @@ class Header:
         if not self.magic == (0x47, 0x49, 0x46):  # check 'GIF'
             raise Exception("Not GIF magic header")
 
-    def write(self, fp:BinaryIO) -> None:
+    def write(self, fp: BinaryIO) -> None:
         barr = bytearray()
         for x in self.magic:
             barr.append(x)
         for x in self.version:
             barr.append(x)
         fp.write(barr)
+
 
 class LogicalScreenDescriptor:
     __slots__ = [
@@ -76,7 +78,7 @@ class LogicalScreenDescriptor:
         self.is_color_table = None
         self.color_table_size_v = None
 
-    def write(self, fp:BinaryIO) -> None:
+    def write(self, fp: BinaryIO) -> None:
         barr = bytearray()
         barr.append(self.screen_width & 0xFF)
         barr.append((self.screen_width & 0xFF00) >> 8)
@@ -101,14 +103,15 @@ class LogicalScreenDescriptor:
         self.color_table_size_v = 2 << (self.flags & 0x07)
         return self.color_table_size_v
 
+
 class ColorTable:
     class ColorTableEntry:
         __slots__ = ["red", "green", "blue"]
 
-        def __init__(self, r:int, g:int, b:int) -> None:
+        def __init__(self, r: int, g: int, b: int) -> None:
             self.red, self.green, self.blue = r, g, b
 
-        def write(self, fp:BinaryIO) -> None:
+        def write(self, fp: BinaryIO) -> None:
             barr = bytearray()
             barr.append(self.red)
             barr.append(self.green)
@@ -124,19 +127,20 @@ class ColorTable:
         for pixel in color_gen:
             self.entries.append(ColorTable.ColorTableEntry(*pixel))
 
-    def write(self, fp:BinaryIO) -> None:
+    def write(self, fp: BinaryIO) -> None:
         for blk in self.entries:
             blk.write(fp)
+
 
 class Block:
     __slots__ = ["block_value", "block_type", "body"]
 
-    def __init__(self, byte:int) -> None:
+    def __init__(self, byte: int) -> None:
         self.block_value = byte
         self.block_type = get_enum(BlockType, self.block_value)
         self.body = None
 
-    def write(self, fp:BinaryIO) -> None:
+    def write(self, fp: BinaryIO) -> None:
         barr = bytearray()
         barr.append(self.block_value)
         fp.write(barr)
@@ -167,6 +171,7 @@ class Block:
             return self.body
         return None
 
+
 class LocalImageDescriptor:
     __slots__ = [
         "left",
@@ -186,7 +191,7 @@ class LocalImageDescriptor:
     def size(cls) -> int:
         return 9
 
-    def __init__(self, bytes:bytes) -> None:
+    def __init__(self, bytes: bytes) -> None:
         unpacked_t = read_struct_or_int(bytes, "<HHHHB")
         self.left, self.top, self.width, self.height, self.flags = unpacked_t
         self.is_local_color_table = None
@@ -195,7 +200,7 @@ class LocalImageDescriptor:
         self.is_sorted_color = None
         self.image_data = None
 
-    def write(self, fp:BinaryIO) -> None:
+    def write(self, fp: BinaryIO) -> None:
         barr = bytearray()
         barr.append(self.left & 0xFF)
         barr.append((self.left & 0xFF00) >> 8)
@@ -239,15 +244,16 @@ class LocalImageDescriptor:
         self.local_color_table_size = 2 << (self.flags & 7)
         return self.local_color_table_size
 
+
 class Extension:
     __slots__ = ["label_value", "label", "extbody"]
 
-    def __init__(self, byte:int) -> None:
+    def __init__(self, byte: int) -> None:
         self.label_value = byte
         self.label = get_enum(ExtensionLabel, self.label_value)
         self.extbody = None
 
-    def write(self, fp:BinaryIO) -> None:
+    def write(self, fp: BinaryIO) -> None:
         barr = bytearray()
         barr.append(self.label_value)
         fp.write(barr)
@@ -265,6 +271,7 @@ class Extension:
             return self.extbody
         return None
 
+
 class ExtGraphicControl:
     __slots__ = [
         "block_size",
@@ -280,7 +287,7 @@ class ExtGraphicControl:
     def size(cls) -> int:
         return 6
 
-    def __init__(self, bytes:bytes) -> None:
+    def __init__(self, bytes: bytes) -> None:
         # print(bytes)
         unpacked_t = read_struct_or_int(bytes, "<BBHBB")
         (
@@ -297,7 +304,7 @@ class ExtGraphicControl:
         if not self.terminator == 0x00:
             raise Exception("BAD Graphic control terminator")
 
-    def write(self, fp:BinaryIO) -> None:
+    def write(self, fp: BinaryIO) -> None:
         barr = bytearray()
         barr.append(self.block_size)
         barr.append(self.flags)
@@ -321,6 +328,7 @@ class ExtGraphicControl:
         self.user_input = (self.flags & 2) != 0
         return self.user_input
 
+
 class ExtApplication:
     __slots__ = [
         "len_bytes",
@@ -334,16 +342,14 @@ class ExtApplication:
     def size(cls) -> int:
         return 11
 
-    def __init__(self, bytes:bytes) -> None:
+    def __init__(self, bytes: bytes) -> None:
         data_size = len(bytes)
         # print(data_size)
         if data_size == 16:
             self.is_XMP = False
         else:
             self.is_XMP = True
-        unpack_t = read_struct_or_int(
-            bytes, f"<B8s3B{data_size - 12}B"
-        )
+        unpack_t = read_struct_or_int(bytes, f"<B8s3B{data_size - 12}B")
         self.len_bytes = unpack_t[0]
         self.application_identifier = unpack_t[1]
         self.application_auth_code = unpack_t[2:5]
@@ -355,7 +361,7 @@ class ExtApplication:
         #    print(len(self.app_info))
         #    print(self.app_info[-5:])
 
-    def write(self, fp:BinaryIO) -> None:
+    def write(self, fp: BinaryIO) -> None:
         barr = bytearray()
         barr.append(self.len_bytes)
         for x in self.application_identifier:
@@ -366,33 +372,36 @@ class ExtApplication:
             barr.append(x)
         fp.write(barr)
 
+
 class ImageData:
     __slots__ = ["lzw_min_code_size", "subblocks"]
 
-    def __init__(self, byte:int) -> None:
+    def __init__(self, byte: int) -> None:
         self.lzw_min_code_size = byte
         self.subblocks = None
 
-    def write(self, fp:BinaryIO) -> None:
+    def write(self, fp: BinaryIO) -> None:
         barr = bytearray()
         barr.append(self.lzw_min_code_size[0])
         fp.write(barr)
         for subs in self.subblocks:
             subs.write(fp)
 
+
 class Subblock:
     __slots__ = ["len_bytes", "bytes"]
 
-    def __init__(self, bytes:bytes) -> None:
+    def __init__(self, bytes: bytes) -> None:
         self.len_bytes = bytes[0]
         self.bytes = bytes[1:]
 
-    def write(self, fp:BinaryIO) -> None:
+    def write(self, fp: BinaryIO) -> None:
         barr = bytearray()
         barr.append(self.len_bytes)
         for x in self.bytes:
             barr.append(x)
         fp.write(barr)
+
 
 class CommonSubblocks:
     __slots__ = ["subblocks"]
@@ -400,6 +409,6 @@ class CommonSubblocks:
     def __init__(self) -> None:
         self.subblocks = None
 
-    def write(self, fp:BinaryIO) -> None:
+    def write(self, fp: BinaryIO) -> None:
         for subs in self.subblocks:
             subs.write(fp)
