@@ -3,6 +3,7 @@ GIF file raw reading library.
 
 # Simple Usage
 '''
+
     from gifraw import GifRaw
 
     # open gif file
