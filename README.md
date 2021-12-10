@@ -2,7 +2,9 @@
 GIF file raw reading library.
 
 # Simple Usage
-'''
+
+    
+    # import gifraw
     from gifraw import GifRaw
 
     # open gif file
@@ -18,7 +20,7 @@ GIF file raw reading library.
     # use imageio for animated gif file save
     imageio.mimsave(saveto, new_frames, fps=new_fps)
 
-'''
+
 
 # Made for Animated GIF resizing
 Because lack of PILLOW/imageio resizing gif, wrote this code.

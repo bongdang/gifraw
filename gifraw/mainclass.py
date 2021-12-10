@@ -114,24 +114,18 @@ class GifRaw:
                 image_body = block.get_image_body
                 _, color_tables = self.get_color_table_entry(image_body)
                 if color_index != -1:
-                    rgb = (
+                    rgb = [
                         color_tables[color_index].red,
                         color_tables[color_index].green,
                         color_tables[color_index].blue,
-                    )
+                    ]
                 if cur_image_idx == index or index == -1:
                     break
                 cur_image_idx += 1
         if color_index == self.logical_screen_desc.bg_color_index:
             using_transparent_color = True
-        if (
-            using_transparent_color
-            and color_index != -1
-            and rgb[0] != None
-            and rgb[1] != None
-            and rgb[2] != None
-        ):
-            return list(rgb)
+        if (using_transparent_color and color_index != -1 and None not in rgb):
+            return rgb
         else:
             return [None, None, None]
 
