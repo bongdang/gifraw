@@ -8,6 +8,9 @@ Notice that all process is for getting transparent color.
 # Just import Main Class for Demo
 from gifraw import GifRaw
 
+# using numpy for speed! see code why use this.
+USE_NUMPY = True
+
 
 def new_resize(fname: str, resized: int, saveto: str) -> None:
     """
@@ -17,6 +20,7 @@ def new_resize(fname: str, resized: int, saveto: str) -> None:
     import io
     import imageio
     from PIL import Image
+    import numpy as np
 
     raw_gif = GifRaw(fname)
 
@@ -31,30 +35,51 @@ def new_resize(fname: str, resized: int, saveto: str) -> None:
             f"BG Color = {raw_gif.global_color_table.entries[0].red, raw_gif.global_color_table.entries[0].blue, raw_gif.global_color_table.entries[0].green}"
         )
     raw_gif.make_raw_image_list()
+
+    if USE_NUMPY:
+        image_format = "RGB"
+    else:
+        image_format = "RGBA"
+
     if len(raw_gif.raw_img_list) > 1:
         new_frames = []
         idx = 0
         for raw_frame in raw_gif.raw_img_list:
             memio = io.BytesIO(raw_frame)
             outimg = Image.open(memio)
-            outimg = outimg.convert("RGBA")
+            outimg = outimg.convert(image_format)
             if idx == 0:
                 saved_img = outimg.copy()
             else:
                 alpha_color = raw_gif.get_transparent_color(idx)
                 print(f"Frame#{idx + 1:03} Alpha Color : {alpha_color}")
-                alpha_color.append(255)
-                pixdata = outimg.load()
-                width, height = outimg.size
-                """
-                # Code below is important!
-                # Changing Alpha color to Transparent color is Soution Key!
-                """
-                for y in range(height):
-                    for x in range(width):
-                        if pixdata[x, y] == tuple(alpha_color):
-                            pixdata[x, y] = (255, 255, 255, 0)
-                saved_img.alpha_composite(outimg)
+
+                if not USE_NUMPY:
+                    alpha_color.append(255)
+                    pixdata = outimg.load()
+                    width, height = outimg.size
+                    """
+                    # Code below is important!
+                    # Changing Alpha color to Transparent color is Soution Key!
+                    """
+                    for y in range(height):
+                        for x in range(width):
+                            if pixdata[x, y] == tuple(alpha_color):
+                                pixdata[x, y] = (255, 255, 255, 0)
+                    saved_img.alpha_composite(outimg)
+                else:
+                    """
+                    this method is default and faster.
+                    see above to know what is actually doing
+                    """
+                    # make numpy array from image
+                    imgarr = np.asarray(outimg)
+                    # make mask array with matching mask color
+                    maskarr = np.all(imgarr == alpha_color, axis = -1)
+                    # make mask image from mask array
+                    mask = Image.fromarray(maskarr)
+                    # use ternary operation(previous image, image, mask image)
+                    saved_img = Image.composite(saved_img, outimg, mask)
                 outimg = saved_img.copy()
 
             # dirty method 100000 for....
